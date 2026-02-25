@@ -2,11 +2,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Install deps from backend
+COPY backend/package.json backend/package-lock.json ./
 RUN npm ci
 
-# Copy source
-COPY . .
+# Copy backend source
+COPY backend .
 
 # Generate prisma client + build TS
 RUN npx prisma generate

@@ -38,9 +38,14 @@ services:
             REDIS_PORT: 6379
             READ_DEDUP_TTL_SECONDS: 60
             PORT: 4000
+            NODE_ENV: production
         ports:
             - '4000:4000'
-        command: sh -c "npx prisma migrate deploy && npm run start"
+        command: >
+            sh -c "
+            npx prisma migrate deploy &&
+            npm run start
+            "
 
 volumes:
     pgdata:
