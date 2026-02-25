@@ -3,6 +3,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 import prettier from 'eslint-config-prettier'
 
+
 export default [
   {
     ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'prisma/migrations/**'],
@@ -32,4 +33,4 @@ export default [
       ],
     },
   },
-]
+];
