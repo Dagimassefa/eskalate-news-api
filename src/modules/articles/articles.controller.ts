@@ -1,3 +1,4 @@
+
 import type { Request, Response, NextFunction } from 'express'
 import { ArticlesService } from './articles.service'
 import { sendPaginated, sendSuccess, sendFailure } from '../../common/response'
@@ -26,16 +27,50 @@ function tryGetUserIdFromAuthHeader(req: Request): string | undefined {
 	}
 }
 
+
+function normalizeStatus(status?: unknown): 'Draft' | 'Published' | undefined {
+	if (typeof status !== 'string') return undefined
+	const s = status.trim()
+	if (s === 'Draft' || s === 'Published') return s
+	if (s.toLowerCase() === 'draft') return 'Draft'
+	if (s.toLowerCase() === 'published') return 'Published'
+	return undefined
+}
+
+function requireUser(
+	req: Request,
+	res: Response,
+): { sub: string; role: 'author' | 'reader' } | undefined {
+	const u = (req as any).user as
+		| { sub: string; role: 'author' | 'reader' }
+		| undefined
+	if (!u?.sub) {
+		sendFailure(
+			res,
+			ERROR_MESSAGES.UNAUTHORIZED,
+			[ERROR_MESSAGES.UNAUTHORIZED],
+			HTTP_STATUS.UNAUTHORIZED,
+		)
+		return undefined
+	}
+	return u
+}
+
 export const ArticlesController = {
 	async createArticle(req: Request, res: Response, next: NextFunction) {
 		try {
-			const authorId = req.user!.sub
-			const { title, content, category, status } = req.body as {
+			const user = requireUser(req, res)
+			if (!user) return
+
+			const authorId = user.sub
+			const { title, content, category } = req.body as {
 				title: string
 				content: string
 				category: string
-				status?: 'Draft' | 'Published'
+				status?: unknown
 			}
+
+			const status = normalizeStatus((req.body as any)?.status)
 
 			const article = await ArticlesService.create(authorId, {
 				title,
@@ -57,7 +92,10 @@ export const ArticlesController = {
 
 	async listMyArticles(req: Request, res: Response, next: NextFunction) {
 		try {
-			const authorId = req.user!.sub
+			const user = requireUser(req, res)
+			if (!user) return
+
+			const authorId = user.sub
 			const includeDeleted = req.query.includeDeleted === 'true'
 
 			const result = await ArticlesService.listMyArticles(req, authorId, {
@@ -81,24 +119,48 @@ export const ArticlesController = {
 
 	async updateArticle(req: Request, res: Response, next: NextFunction) {
 		try {
-			const authorId = req.user!.sub
-			const articleId = req.params.id
+			const user = requireUser(req, res)
+			if (!user) return
 
-			const { title, content, category, status } = req.body as {
+			const authorId = user.sub
+			const articleId = String(req.params.id)
+
+			const { title, content, category } = req.body as {
 				title?: string
 				content?: string
 				category?: string
-				status?: 'Draft' | 'Published'
+				status?: unknown
 			}
 
-			const updated = await ArticlesService.update(authorId, articleId, {
-				title,
-				content,
-				category,
-				status,
-			})
+			const status = normalizeStatus((req.body as any)?.status)
 
-			return sendSuccess(res, SUCCESS_MESSAGES.UPDATED, updated)
+			try {
+				const updated = await ArticlesService.update(
+					authorId,
+					articleId,
+					{
+						title,
+						content,
+						category,
+						status,
+					},
+				)
+
+				return sendSuccess(res, SUCCESS_MESSAGES.UPDATED, updated)
+			} catch (err: any) {
+				if (
+					err?.message === ERROR_MESSAGES.FORBIDDEN ||
+					err?.name === 'ForbiddenError'
+				) {
+					return sendFailure(
+						res,
+						'Forbidden',
+						['Forbidden'],
+						HTTP_STATUS.FORBIDDEN,
+					)
+				}
+				throw err
+			}
 		} catch (err) {
 			next(err)
 		}
@@ -106,18 +168,36 @@ export const ArticlesController = {
 
 	async softDeleteArticle(req: Request, res: Response, next: NextFunction) {
 		try {
-			const authorId = req.user!.sub
-			const articleId = req.params.id
+			const user = requireUser(req, res)
+			if (!user) return
 
-			const deleted = await ArticlesService.softDelete(
-				authorId,
-				articleId,
-			)
+			const authorId = user.sub
+			const articleId = String(req.params.id)
 
-			return sendSuccess(res, SUCCESS_MESSAGES.DELETED, {
-				id: deleted.id,
-				deletedAt: deleted.deletedAt,
-			})
+			try {
+				const deleted = await ArticlesService.softDelete(
+					authorId,
+					articleId,
+				)
+
+				return sendSuccess(res, SUCCESS_MESSAGES.DELETED, {
+					id: deleted.id,
+					deletedAt: deleted.deletedAt,
+				})
+			} catch (err: any) {
+				if (
+					err?.message === ERROR_MESSAGES.FORBIDDEN ||
+					err?.name === 'ForbiddenError'
+				) {
+					return sendFailure(
+						res,
+						'Forbidden',
+						['Forbidden'],
+						HTTP_STATUS.FORBIDDEN,
+					)
+				}
+				throw err
+			}
 		} catch (err) {
 			next(err)
 		}
@@ -164,8 +244,7 @@ export const ArticlesController = {
 		next: NextFunction,
 	) {
 		try {
-			const articleId = req.params.id
-
+			const articleId = String(req.params.id)
 			const maybeUserId = tryGetUserIdFromAuthHeader(req)
 
 			const article = await ArticlesService.getByIdAndTrackRead({

@@ -1,12 +1,14 @@
+
 import { prisma } from '../../db/prisma'
 import { AppError } from '../../common/errors'
 import { HTTP_STATUS } from '../../common/httpStatus'
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../config/constants'
 import type { LoginInput, SignupInput } from './auth.types'
-import argon2 from 'argon2'
 import jwt from 'jsonwebtoken'
 import { env } from '../../config/env'
 import { Prisma } from '@prisma/client'
+
+import { hashPassword, verifyPassword } from '../../utils/password'
 
 function signToken(payload: { sub: string; role: 'author' | 'reader' }) {
 	return jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN })
@@ -14,7 +16,7 @@ function signToken(payload: { sub: string; role: 'author' | 'reader' }) {
 
 export const AuthService = {
 	async signup(input: SignupInput) {
-		const passwordHash = await argon2.hash(input.password)
+		const passwordHash = await hashPassword(input.password)
 
 		try {
 			const user = await prisma.user.create({
@@ -38,7 +40,6 @@ export const AuthService = {
 				user,
 			}
 		} catch (err) {
-			// Duplicate email
 			if (
 				err instanceof Prisma.PrismaClientKnownRequestError &&
 				err.code === 'P2002'
@@ -65,7 +66,7 @@ export const AuthService = {
 			)
 		}
 
-		const ok = await argon2.verify(user.password, input.password)
+		const ok = await verifyPassword(user.password, input.password)
 		if (!ok) {
 			throw new AppError(
 				ERROR_MESSAGES.UNAUTHORIZED,

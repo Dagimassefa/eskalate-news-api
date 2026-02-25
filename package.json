@@ -16,8 +16,9 @@
         "prisma:deploy": "prisma migrate deploy",
         "prisma:studio": "prisma studio",
         "seed": "tsx prisma/seed.ts",
-        "test": "jest --runInBand",
-        "test:watch": "jest --watch"
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@prisma/client": "^5.22.0",
@@ -44,7 +45,7 @@
         "@types/jsonwebtoken": "^9.0.6",
         "@types/morgan": "^1.9.9",
         "@types/node": "^22.10.2",
-        "@types/supertest": "^6.0.2",
+        "@types/supertest": "^6.0.3",
         "@types/swagger-jsdoc": "^6.0.4",
         "@types/swagger-ui-express": "^4.1.8",
         "@types/uuid": "^10.0.0",
@@ -57,7 +58,8 @@
         "supertest": "^7.0.0",
         "ts-jest": "^29.2.5",
         "ts-node": "^10.9.2",
-        "tsx": "^4.19.2",
-        "typescript": "^5.6.3"
+        "tsx": "^4.21.0",
+        "typescript": "^5.6.3",
+        "vitest": "^4.0.18"
     }
 }

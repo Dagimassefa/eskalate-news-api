@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { makeApp } from '../helpers/makeApp'
 import { mockPrisma } from '../helpers/mockPrisma'
-import '../../tests/setup'
 
 describe('Public articles feed', () => {
 	const { request } = makeApp()

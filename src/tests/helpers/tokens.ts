@@ -1,28 +1,8 @@
-import { vi } from 'vitest'
-
-export const mockPrisma = {
-	user: {
-		findUnique: vi.fn(),
-		create: vi.fn(),
-	},
-	article: {
-		findUnique: vi.fn(),
-		findMany: vi.fn(),
-		create: vi.fn(),
-		update: vi.fn(),
-		count: vi.fn(),
-	},
-	readLog: {
-		create: vi.fn(),
-		groupBy: vi.fn(),
-	},
-	dailyAnalytics: {
-		upsert: vi.fn(),
-	},
+import { signJwt } from '../../utils/jwt'
+export function makeAuthorToken(userId = 'a1') {
+	return signJwt({ sub: userId, role: 'author' })
 }
 
-vi.mock('../../db/prisma', () => {
-	return {
-		prisma: mockPrisma,
-	}
-})
+export function makeReaderToken(userId = 'r1') {
+	return signJwt({ sub: userId, role: 'reader' })
+}

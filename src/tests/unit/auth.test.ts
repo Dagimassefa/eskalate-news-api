@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { makeApp } from '../helpers/makeApp'
 import { mockPrisma } from '../helpers/mockPrisma'
 
-import '../../tests/setup'
+vi.mock('../../utils/password', () => ({
+	hashPassword: vi.fn(),
+	verifyPassword: vi.fn(),
+}))
+
+import { hashPassword, verifyPassword } from '../../utils/password'
 
 describe('Auth endpoints', () => {
 	const { request } = makeApp()
@@ -12,13 +17,15 @@ describe('Auth endpoints', () => {
 	})
 
 	it('POST /api/auth/signup should create user and return 201', async () => {
+		vi.mocked(hashPassword).mockResolvedValueOnce('hashed-password')
+
 		mockPrisma.user.create.mockResolvedValueOnce({
 			id: 'u1',
 			name: 'John Doe',
 			email: 'john@example.com',
 			role: 'author',
 			createdAt: new Date(),
-		})
+		} as any)
 
 		const res = await request.post('/api/auth/signup').send({
 			name: 'John Doe',
@@ -46,19 +53,16 @@ describe('Auth endpoints', () => {
 	})
 
 	it('POST /api/auth/login should return token on valid credentials', async () => {
-		const user = {
+		mockPrisma.user.findUnique.mockResolvedValueOnce({
 			id: 'u2',
 			name: 'Reader One',
 			email: 'reader@example.com',
-			password: 'argon-hash',
+			password: 'hashed-password',
 			role: 'reader',
 			createdAt: new Date(),
-		}
+		} as any)
 
-		mockPrisma.user.findUnique.mockResolvedValueOnce(user)
-
-		const argon2 = await import('argon2')
-		vi.spyOn(argon2, 'verify').mockResolvedValueOnce(true as any)
+		vi.mocked(verifyPassword).mockResolvedValueOnce(true)
 
 		const res = await request.post('/api/auth/login').send({
 			email: 'reader@example.com',

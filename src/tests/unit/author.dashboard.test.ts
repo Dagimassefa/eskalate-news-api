@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { makeApp } from '../helpers/makeApp'
 import { mockPrisma } from '../helpers/mockPrisma'
 import { makeAuthorToken } from '../helpers/tokens'
-import '../../tests/setup'
 
 describe('Author dashboard', () => {
 	const { request } = makeApp()

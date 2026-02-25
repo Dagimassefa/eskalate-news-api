@@ -2,27 +2,34 @@ import { vi } from 'vitest'
 
 export const mockPrisma = {
 	user: {
-		findUnique: vi.fn(),
 		create: vi.fn(),
-	},
-	article: {
 		findUnique: vi.fn(),
 		findMany: vi.fn(),
+		update: vi.fn(),
+	},
+
+	article: {
 		create: vi.fn(),
+		findMany: vi.fn(),
+		findUnique: vi.fn(),
+		findFirst: vi.fn(),
 		update: vi.fn(),
 		count: vi.fn(),
 	},
+
 	readLog: {
 		create: vi.fn(),
-		groupBy: vi.fn(),
+		findMany: vi.fn(),
+		groupBy: vi.fn(), 
 	},
+
 	dailyAnalytics: {
 		upsert: vi.fn(),
 	},
-}
 
-vi.mock('../../db/prisma', () => {
-	return {
-		prisma: mockPrisma,
-	}
-})
+	$transaction: vi.fn(async (arg: any) => {
+		if (typeof arg === 'function') return arg(mockPrisma as any)
+		return Promise.all(arg)
+	}),
+	$disconnect: vi.fn(),
+} as const

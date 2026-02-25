@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { AnalyticsService } from '../../modules/analytics/analytics.service'
 import { mockPrisma } from '../helpers/mockPrisma'
-import '../../tests/setup'
 
 describe('Analytics processing', () => {
 	beforeEach(() => {
