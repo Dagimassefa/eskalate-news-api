@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+    postgres:
+        image: postgres:15
+        container_name: eskalate_postgres
+        restart: always
+        environment:
+            POSTGRES_USER: eskalate
+            POSTGRES_PASSWORD: eskalate
+            POSTGRES_DB: eskalate_db
+        ports:
+            - '5432:5432'
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+
+    redis:
+        image: redis:7
+        container_name: eskalate_redis
+        restart: always
+        ports:
+            - '6379:6379'
+
+    api:
+        build:
+            context: ..
+            dockerfile: docker/Dockerfile
+        container_name: eskalate_api
+        restart: always
+        depends_on:
+            - postgres
+            - redis
+        environment:
+            DATABASE_URL: postgresql://eskalate:eskalate@postgres:5432/eskalate_db
+            JWT_SECRET: super_secret_jwt_key
+            JWT_EXPIRES_IN: 24h
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            READ_DEDUP_TTL_SECONDS: 60
+            PORT: 4000
+        ports:
+            - '4000:4000'
+        command: sh -c "npx prisma migrate deploy && npm run start"
+
+volumes:
+    pgdata:
