@@ -1,3 +1,4 @@
+
 import { prisma } from '../../db/prisma'
 import type { ArticleStatus } from '@prisma/client'
 
@@ -11,6 +12,14 @@ export const ArticlesRepo = {
 	}) {
 		return prisma.article.create({
 			data,
+		})
+	},
+
+
+	async findMetaById(id: string) {
+		return prisma.article.findUnique({
+			where: { id },
+			select: { id: true, deletedAt: true },
 		})
 	},
 
